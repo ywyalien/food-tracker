@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Food log</title>
+<style>
+:root{
+  --paper:#e9ebe6; --card:#f4f5f1; --ink:#161c19; --ink-2:#3d4741;
+  --muted:#6d7972; --rule:#ccd2cb; --rule-soft:#dde1da;
+  --accent:#1f5f52; --accent-soft:#cfded8; --over:#8e3b24; --over-soft:#e6d3cb;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:15px;line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  padding:0 20px 72px;
+}
+.wrap{max-width:860px;margin:0 auto}
+
+header.top{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;padding:34px 0 18px;border-bottom:1px solid var(--rule);
+}
+h1{font-family:var(--serif);font-size:27px;font-weight:600;margin:0;letter-spacing:-.01em}
+.stamp{color:var(--muted);font-size:13px}
+
+/* the day budget - the one loud element on the page */
+.budget{padding:26px 0 22px;border-bottom:1px solid var(--rule)}
+.budget-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.budget-date{font-family:var(--serif);font-size:19px}
+.budget-note{color:var(--muted);font-size:13px}
+.gauge{margin-top:18px}
+.gauge + .gauge{margin-top:16px}
+.gauge-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.gauge-name{font-size:13px;color:var(--ink-2)}
+.gauge-fig{font-family:var(--serif);font-size:30px;line-height:1.1}
+.gauge-fig .of{font-size:16px;color:var(--muted)}
+.gauge-left{font-size:13px;color:var(--muted);text-align:right}
+.gauge-left b{color:var(--ink);font-weight:600}
+.bar{height:9px;margin-top:9px;background:var(--rule-soft);border-radius:1px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.spill{background:var(--over)}
+.minor{display:flex;gap:22px;flex-wrap:wrap;margin-top:20px;font-size:13px;color:var(--ink-2)}
+.minor b{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink)}
+
+/* controls */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:18px 0 4px}
+input[type=search]{
+  flex:1;min-width:190px;padding:8px 11px;font:inherit;color:inherit;
+  background:var(--card);border:1px solid var(--rule);border-radius:2px;
+}
+input[type=search]:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.chip{
+  font:inherit;font-size:13px;padding:7px 13px;cursor:pointer;
+  background:transparent;color:var(--ink-2);
+  border:1px solid var(--rule);border-radius:2px;
+}
+button.chip[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ledger */
+.day{padding:24px 0;border-bottom:1px solid var(--rule)}
+.day-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;cursor:pointer}
+.day-head h2{font-family:var(--serif);font-size:18px;font-weight:600;margin:0}
+.day-head .kc{font-family:var(--serif);font-size:18px}
+.day-head .kc span{font-size:12px;color:var(--muted);font-family:var(--sans)}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th{
+  font-weight:500;font-size:11.5px;color:var(--muted);text-align:right;
+  padding:0 0 6px;border-bottom:1px solid var(--rule-soft);
+}
+th.item{text-align:left}
+td{padding:6px 0;border-bottom:1px solid var(--rule-soft);text-align:right;white-space:nowrap}
+td.item{text-align:left;white-space:normal;padding-right:14px;width:99%}
+td.item .portion{display:block;color:var(--muted);font-size:12.5px}
+tr.meal td{
+  border:0;padding:14px 0 2px;font-size:12px;color:var(--muted);text-align:left;
+}
+tr.sum td{font-weight:600;border-top:1.5px solid var(--rule);border-bottom:0;padding-top:9px}
+tr.sum td.item{font-weight:500}
+.est{color:var(--muted);font-size:12px;margin-left:5px}
+.est[data-c=low]{color:var(--over)}
+
+/* trend */
+.trend{padding:26px 0 0}
+.trend h2{font-family:var(--serif);font-size:18px;font-weight:600;margin:0 0 4px}
+.spark{display:flex;align-items:flex-end;gap:3px;height:74px;margin:16px 0 8px}
+.spark div{flex:1;background:var(--accent-soft);border-top:2px solid var(--accent);min-height:2px}
+.spark div.over{background:var(--over-soft);border-top-color:var(--over)}
+.spark-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.avg{display:flex;gap:22px;flex-wrap:wrap;margin-top:18px;font-size:13px;color:var(--ink-2)}
+.avg b{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink)}
+
+.empty{padding:56px 0;color:var(--muted);font-family:var(--serif);font-size:17px}
+.foot{padding:30px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
+.foot a{color:var(--accent)}
+[hidden]{display:none!important}
+@media (max-width:620px){
+  body{padding:0 14px 60px}
+  th.c,td.c{display:none}
+  .gauge-fig{font-size:26px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .bar i{transition:width .25s ease}
+}
+</style>
+</head><body>
+<div class="wrap">
+  <header class="top">
+    <h1>Food log</h1>
+    <div class="stamp">Updated 5 Sep 2026, 05:32</div>
+  </header>
+
+  <div class="budget" id="budget"></div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Find an item across every logged day">
+    <button class="chip" id="scope" aria-pressed="false">Showing all days</button>
+  </div>
+
+  <div id="ledger"></div>
+
+  <div class="trend" id="trend"></div>
+
+  <p class="foot">
+    A tilde next to an item means the portion was estimated rather than weighed or read off a
+    label. Nutrition values come from
+    <a href="https://fdc.nal.usda.gov/">USDA FoodData Central</a> and
+    <a href="https://www.hpb.gov.sg/healthy-living/food-and-beverage/sgfoodid/">HPB&rsquo;s Singapore Food Insights Database</a>;
+    hawker dishes vary a lot between stalls, so treat those as a range, not a reading.
+  </p>
+</div>
+<script>window.__LOG__={"generated": "5 Sep 2026, 05:32", "today": "2026-09-05", "targets": {"kcal": 2000, "protein_g": 130, "carb_g": 200, "fat_g": 60, "fibre_g": 30}, "days": [{"date": "2026-09-04", "weekday": "Fri", "pretty": "4 Sep 2026", "meals": [{"meal": "lunch", "label": "Lunch", "items": [{"entry_id": "e00001", "date": "2026-09-04", "meal": "lunch", "food_id": "chicken_chop_grilled_skin_on_western_stall", "food_name": "Chicken chop, grilled skin-on (Western stall)", "grams": 140.0, "portion_note": "served ~150 g cooked skin-on chop, only a small piece of skin (~10 g) left on the after plate, ate ~140 g", "kcal": 324.8, "protein_g": 32.6, "carb_g": 0.0, "fat_g": 20.6, "fibre_g": 0.0, "confidence": "medium", "method": "estimate-image-delta", "image_ref": "", "logged_at": "2026-09-04T12:19:29"}, {"entry_id": "e00002", "date": "2026-09-04", "meal": "lunch", "food_id": "brown_gravy_western_stall", "food_name": "Brown gravy, Western stall", "grams": 30.0, "portion_note": "served ~40 g brown gravy, some smeared and left on the plate, ate ~30 g", "kcal": 37.5, "protein_g": 0.3, "carb_g": 3.6, "fat_g": 2.4, "fibre_g": 0.1, "confidence": "low", "method": "estimate-image-delta", "image_ref": "", "logged_at": "2026-09-04T12:19:29"}, {"entry_id": "e00003", "date": "2026-09-04", "meal": "lunch", "food_id": "aglio_olio_spaghetti_stall_portion_incl_oil", "food_name": "Aglio olio spaghetti (stall portion, incl. oil)", "grams": 120.0, "portion_note": "served ~200 g (approx 180 g cooked pasta + 1.5 tbsp oil), ~40% left in the after photo, ate ~120 g", "kcal": 279.6, "protein_g": 6.2, "carb_g": 33.2, "fat_g": 13.4, "fibre_g": 1.9, "confidence": "medium", "method": "estimate-image-delta", "image_ref": "", "logged_at": "2026-09-04T12:19:29"}, {"entry_id": "e00004", "date": "2026-09-04", "meal": "lunch", "food_id": "garden_salad_greens_lettuce_cabbage_carrot", "food_name": "Garden salad greens (lettuce, cabbage, carrot)", "grams": 80.0, "portion_note": "one side plate of greens, plate empty in the after shot, ate all of it", "kcal": 12.0, "protein_g": 1.1, "carb_g": 2.3, "fat_g": 0.2, "fibre_g": 1.0, "confidence": "medium", "method": "estimate-image-delta", "image_ref": "", "logged_at": "2026-09-04T12:19:29"}, {"entry_id": "e00005", "date": "2026-09-04", "meal": "lunch", "food_id": "salad_dressing_drizzle_mayo_cheese_sauce", "food_name": "Salad dressing drizzle (mayo + cheese sauce)", "grams": 24.0, "portion_note": "~15-20 drizzle lines, ~3 mm wide across a ~22 cm plate, ~24 g total, all eaten with the greens", "kcal": 115.2, "protein_g": 0.2, "carb_g": 1.2, "fat_g": 12.0, "fibre_g": 0.0, "confidence": "low", "method": "estimate-image", "image_ref": "", "logged_at": "2026-09-04T12:19:29"}]}], "totals": {"kcal": 769.1, "protein_g": 40.4, "carb_g": 40.3, "fat_g": 48.6, "fibre_g": 3.0}, "count": 5}], "averages": {"kcal": 769.1, "protein_g": 40.4, "carb_g": 40.3, "fat_g": 48.6, "fibre_g": 3.0}, "window": 60};</script>
+<script>
+const D = window.__LOG__;
+const N = ["kcal","protein_g","carb_g","fat_g","fibre_g"];
+const esc = s => String(s??"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n0 = v => Math.round(v).toLocaleString();
+const n1 = v => (Math.round(v*10)/10).toLocaleString(undefined,{maximumFractionDigits:1});
+
+function gauge(name, used, target, unit){
+  const pct = target>0 ? used/target : 0;
+  const fill = Math.min(pct,1)*100;
+  const spill = Math.max(0, Math.min(pct-1,0.5))*100;
+  const left = target - used;
+  const leftTxt = left >= 0
+    ? `<b>${n0(left)}</b> ${unit} left`
+    : `<b>${n0(-left)}</b> ${unit} over`;
+  return `<div class="gauge">
+    <div class="gauge-row">
+      <div><div class="gauge-name">${name}</div>
+        <div class="gauge-fig">${n0(used)} <span class="of">/ ${n0(target)} ${unit}</span></div></div>
+      <div class="gauge-left">${leftTxt}</div>
+    </div>
+    <div class="bar"><i style="width:${fill}%"></i><i class="spill" style="width:${spill}%"></i></div>
+  </div>`;
+}
+
+function renderBudget(){
+  const el = document.getElementById("budget");
+  const day = D.days.find(d => d.date === D.today) ||
+              {date:D.today, pretty:"Today", weekday:"", totals:{kcal:0,protein_g:0,carb_g:0,fat_g:0,fibre_g:0}, count:0};
+  const t = day.totals, g = D.targets;
+  el.innerHTML = `
+    <div class="budget-head">
+      <div class="budget-date">${day.date===D.today?"Today":esc(day.pretty)}${day.weekday?" \u00b7 "+day.weekday:""}</div>
+      <div class="budget-note">${day.count} ${day.count===1?"item":"items"} logged</div>
+    </div>
+    ${gauge("Energy", t.kcal, g.kcal, "kcal")}
+    ${gauge("Protein", t.protein_g, g.protein_g, "g")}
+    <div class="minor">
+      <div>Carbs <b>${n0(t.carb_g)}</b> / ${n0(g.carb_g)} g</div>
+      <div>Fat <b>${n0(t.fat_g)}</b> / ${n0(g.fat_g)} g</div>
+      <div>Fibre <b>${n0(t.fibre_g)}</b> / ${n0(g.fibre_g)} g</div>
+    </div>`;
+}
+
+function itemRow(it){
+  const mark = it.confidence && it.confidence !== "high"
+    ? `<span class="est" data-c="${esc(it.confidence)}" title="${esc(it.confidence)} confidence, ${esc(it.method||"")}">~</span>` : "";
+  const portion = it.portion_note || (it.grams ? n0(it.grams)+" g" : "");
+  return `<tr>
+    <td class="item">${esc(it.food_name)}${mark}
+      ${portion?`<span class="portion">${esc(portion)}</span>`:""}</td>
+    <td>${n0(it.kcal)}</td><td>${n1(it.protein_g)}</td>
+    <td class="c">${n1(it.carb_g)}</td><td class="c">${n1(it.fat_g)}</td><td>${n1(it.fibre_g)}</td>
+  </tr>`;
+}
+
+function dayBlock(day, open){
+  const rows = day.meals.map(m =>
+    `<tr class="meal"><td colspan="6">${esc(m.label)}</td></tr>` +
+    m.items.map(itemRow).join("")).join("");
+  const t = day.totals;
+  return `<section class="day" data-date="${day.date}">
+    <div class="day-head" role="button" tabindex="0" aria-expanded="${open}">
+      <h2>${day.date===D.today?"Today":esc(day.pretty)} \u00b7 ${esc(day.weekday)}</h2>
+      <div class="kc">${n0(t.kcal)} <span>kcal \u00b7 ${n0(t.protein_g)} g protein</span></div>
+    </div>
+    <div class="day-body" ${open?"":"hidden"}>
+      <table>
+        <thead><tr>
+          <th class="item">Item</th><th>kcal</th><th>protein</th>
+          <th class="c">carbs</th><th class="c">fat</th><th>fibre</th>
+        </tr></thead>
+        <tbody>${rows}
+          <tr class="sum"><td class="item">Day total</td>
+            <td>${n0(t.kcal)}</td><td>${n1(t.protein_g)}</td>
+            <td class="c">${n1(t.carb_g)}</td><td class="c">${n1(t.fat_g)}</td><td>${n1(t.fibre_g)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>`;
+}
+
+function renderDays(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const todayOnly = document.getElementById("scope").getAttribute("aria-pressed") === "true";
+  let days = D.days;
+  if (todayOnly) days = days.filter(d => d.date === D.today);
+  if (q) days = days.map(d => {
+    const meals = d.meals.map(m => ({...m, items: m.items.filter(i =>
+      (i.food_name+" "+(i.portion_note||"")).toLowerCase().includes(q))}))
+      .filter(m => m.items.length);
+    return meals.length ? {...d, meals} : null;
+  }).filter(Boolean);
+
+  const host = document.getElementById("ledger");
+  host.innerHTML = days.length
+    ? days.map((d,i) => dayBlock(d, i < 3 || !!q || todayOnly)).join("")
+    : `<p class="empty">${q ? "Nothing logged matches \u201c"+esc(q)+"\u201d." : "Nothing logged in this window yet."}</p>`;
+
+  host.querySelectorAll(".day-head").forEach(h => {
+    const toggle = () => {
+      const body = h.nextElementSibling;
+      const open = h.getAttribute("aria-expanded") === "true";
+      h.setAttribute("aria-expanded", String(!open));
+      body.hidden = open;
+    };
+    h.addEventListener("click", toggle);
+    h.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+    });
+  });
+}
+
+function renderTrend(){
+  const el = document.getElementById("trend");
+  const days = D.days.slice(0, 21).reverse();
+  if (!days.length) { el.hidden = true; return; }
+  const max = Math.max(D.targets.kcal, ...days.map(d => d.totals.kcal)) || 1;
+  const bars = days.map(d => {
+    const h = Math.max(2, (d.totals.kcal / max) * 74);
+    const over = d.totals.kcal > D.targets.kcal;
+    return `<div class="${over?"over":""}" style="height:${h}px"
+      title="${esc(d.pretty)}: ${n0(d.totals.kcal)} kcal, ${n0(d.totals.protein_g)} g protein"></div>`;
+  }).join("");
+  const a = D.averages;
+  el.innerHTML = `<h2>Daily totals</h2>
+    <div class="budget-note">${days.length} logged ${days.length===1?"day":"days"}, oldest first. Bars past your energy target are marked.</div>
+    <div class="spark">${bars}</div>
+    <div class="spark-x"><span>${esc(days[0].pretty)}</span><span>${esc(days[days.length-1].pretty)}</span></div>
+    <div class="avg">
+      <div>Average energy <b>${n0(a.kcal)}</b> kcal</div>
+      <div>Protein <b>${n1(a.protein_g)}</b> g</div>
+      <div>Carbs <b>${n1(a.carb_g)}</b> g</div>
+      <div>Fat <b>${n1(a.fat_g)}</b> g</div>
+      <div>Fibre <b>${n1(a.fibre_g)}</b> g</div>
+    </div>`;
+}
+
+document.getElementById("q").addEventListener("input", renderDays);
+document.getElementById("scope").addEventListener("click", e => {
+  const on = e.currentTarget.getAttribute("aria-pressed") === "true";
+  e.currentTarget.setAttribute("aria-pressed", String(!on));
+  e.currentTarget.textContent = !on ? "Showing today" : "Showing all days";
+  renderDays();
+});
+
+renderBudget(); renderDays(); renderTrend();
+</script>
+</body></html>
