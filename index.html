@@ -15,12 +15,7 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{
-  margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--sans);font-size:15px;line-height:1.5;
-  font-variant-numeric:tabular-nums;
-  padding:0 20px 72px;
-}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums;padding:0 20px 72px}
 .wrap{max-width:860px;margin:0 auto}
 header.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:34px 0 18px;border-bottom:1px solid var(--rule)}
 h1{font-family:var(--serif);font-size:27px;font-weight:600;margin:0;letter-spacing:-.01em}
@@ -69,15 +64,13 @@ tr.sum td.item{font-weight:500}
 tr.sum.grand td{border-top:2px solid var(--ink)}
 .est{color:var(--muted);font-size:12px;margin-left:5px}
 .est[data-c=low]{color:var(--over)}
-.trend{padding:28px 0 0}
+.trend{padding:22px 0 28px;border-bottom:1px solid var(--rule)}
 .trend h2{font-family:var(--serif);font-size:18px;font-weight:600;margin:0 0 4px}
 .metric{margin-top:20px}
 .metric-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin-bottom:6px}
 .metric-name{font-weight:600;color:var(--ink)}
 .metric-head b{font-family:var(--serif);color:var(--ink);font-weight:600}
-.spark{display:flex;align-items:flex-end;gap:3px;height:56px}
-.spark div{flex:1;background:var(--bar-soft,var(--accent-soft));border-top:2px solid var(--bar,var(--accent));min-height:2px}
-.spark div.over{background:var(--over-soft);border-top-color:var(--over)}
+.line-chart{width:100%;height:56px;display:block;overflow:visible}
 .spark-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:8px}
 .empty{padding:56px 0;color:var(--muted);font-family:var(--serif);font-size:17px}
 .foot{padding:30px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
@@ -96,6 +89,9 @@ tr.sum.grand td{border-top:2px solid var(--ink)}
       <button class="chip" data-view="week" aria-pressed="false">Week</button>
       <button class="chip" data-view="month" aria-pressed="false">Month</button>
     </div>
+  </div>
+  <div class="trend" id="trend"></div>
+  <div class="controls">
     <input type="search" id="q" placeholder="Find an item across every logged day">
     <div class="range">
       <label for="from">From</label><input type="date" id="from">
@@ -103,7 +99,6 @@ tr.sum.grand td{border-top:2px solid var(--ink)}
     </div>
   </div>
   <div id="ledger"></div>
-  <div class="trend" id="trend"></div>
   <p class="foot">A tilde next to an item means the portion was estimated rather than weighed or read off a label. Nutrition values come from
     <a href="https://fdc.nal.usda.gov/">USDA FoodData Central</a> and
     <a href="https://www.hpb.gov.sg/healthy-living/food-and-beverage/sgfoodid/">HPB&rsquo;s Singapore Food Insights Database</a>;
@@ -129,8 +124,6 @@ function gauge(name, used, target, unit){
     <div class="gauge-left">${leftTxt}</div></div>
     <div class="bar"><i style="width:${fill}%"></i><i class="spill" style="width:${spill}%"></i></div></div>`;
 }
-
-function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 
 function currentPeriodInfo(view){
   const today = D.today;
@@ -186,6 +179,7 @@ function sumItems(items){
   return t;
 }
 
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function isoWeekInfo(dateStr){
   const d = new Date(dateStr+"T00:00:00");
   const dow = (d.getDay()+6)%7;
@@ -287,17 +281,26 @@ function renderLedger(){
   });
 }
 
-function metricSpark(label, series, targetSeries, labels, unit, barVar, softVar){
+function metricLine(label, series, targetSeries, labels, unit, strokeVar, fillVar){
+  const w = 300, h = 50, pad = 4;
   const max = Math.max(...series, ...(targetSeries||[0]), 1);
-  const bars = series.map((v,i) => {
-    const h = Math.max(2, (v/max)*50);
-    const over = targetSeries && v > targetSeries[i];
+  const n = series.length;
+  const stepX = n > 1 ? (w-2*pad)/(n-1) : 0;
+  const pts = series.map((v,i) => [pad + stepX*i, h - pad - (v/max)*(h-2*pad)]);
+  const pathD = pts.map((p,i) => (i===0?"M":"L")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  const areaD = n ? `${pathD} L${pts[n-1][0].toFixed(1)},${(h-pad).toFixed(1)} L${pts[0][0].toFixed(1)},${(h-pad).toFixed(1)} Z` : "";
+  const dots = pts.map((p,i) => {
+    const over = targetSeries && series[i] > targetSeries[i];
     const lbl = labels && labels[i] ? `${esc(labels[i])}: ` : "";
-    return `<div class="${over?'over':''}" style="height:${h}px;--bar:var(${barVar});--bar-soft:var(${softVar})" title="${lbl}${n0(v)} ${unit}"></div>`;
+    return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="${over?"var(--over)":`var(${strokeVar})`}"><title>${lbl}${n0(series[i])} ${unit}</title></circle>`;
   }).join("");
   const avg = series.length ? series.reduce((a,b)=>a+b,0)/series.length : 0;
   return `<div class="metric"><div class="metric-head"><span class="metric-name">${label}</span><span>avg <b>${n1(avg)}</b> ${unit}</span></div>
-    <div class="spark">${bars}</div></div>`;
+    <svg class="line-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <path d="${areaD}" fill="var(${fillVar})" stroke="none"></path>
+      <path d="${pathD}" fill="none" stroke="var(${strokeVar})" stroke-width="2"></path>
+      ${dots}
+    </svg></div>`;
 }
 
 function renderTrend(){
@@ -344,9 +347,9 @@ function renderTrend(){
   }
   el.hidden = false;
   el.innerHTML = `<h2>${title}</h2>
-    ${metricSpark("Energy", kcalSeries, kcalTargets, labels, "kcal", "--accent", "--accent-soft")}
-    ${metricSpark("Protein", proteinSeries, proteinTargets, labels, "g", "--protein", "--protein-soft")}
-    ${metricSpark("Carbs", carbSeries, null, labels, "g", "--carb", "--carb-soft")}
+    ${metricLine("Energy", kcalSeries, kcalTargets, labels, "kcal", "--accent", "--accent-soft")}
+    ${metricLine("Protein", proteinSeries, proteinTargets, labels, "g", "--protein", "--protein-soft")}
+    ${metricLine("Carbs", carbSeries, null, labels, "g", "--carb", "--carb-soft")}
     <div class="spark-x"><span>${esc(xStart)}</span><span>${esc(xEnd)}</span></div>`;
 }
 
@@ -361,6 +364,8 @@ document.getElementById("q").addEventListener("input", renderLedger);
 document.getElementById("from").addEventListener("change", renderLedger);
 document.getElementById("to").addEventListener("change", renderLedger);
 
+document.getElementById("from").value = D.today;
+document.getElementById("to").value = D.today;
 renderBudget(); renderLedger(); renderTrend();
 </script>
 </body></html>
